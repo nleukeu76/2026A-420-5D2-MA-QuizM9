@@ -95,3 +95,41 @@ test('le salon d’une autre partie ne reçoit rien', async () => {
   mine.socket.disconnect();
   other.socket.disconnect();
 });
+
+
+/** Attend le prochain événement de ce nom sur cette connexion. */
+function next(socket, event) {
+  return new Promise((resolve) => socket.once(event, resolve));
+}
+
+test('un message du chat arrive à tout le salon', async () => {
+  const code = await newGame();
+  await api.request('POST', `/api/games/${code}/players`, { nickname: 'zoé' });
+  const zoe = await join(code);
+  const host = await join(code);
+
+  // On écoute AVANT d'envoyer : sinon, le message pourrait arriver avant qu'on écoute.
+  const received = next(host.socket, 'chat:message');
+  const reply = await zoe.socket.emitWithAck('chat:send', { nickname: 'zoé', text: 'Bonjour' });
+  assert.deepEqual(reply, {});
+
+  const message = await received;
+  assert.equal(message.nickname, 'zoé');
+  assert.equal(message.text, 'Bonjour');
+
+  zoe.socket.disconnect();
+  host.socket.disconnect();
+});
+
+test('chat désactivé : le serveur refuse', async () => {
+  const code = await newGame();
+  await api.request('POST', `/api/games/${code}/players`, { nickname: 'zoé' });
+  const { socket } = await join(code);
+
+  await api.request('POST', `/api/games/${code}/chat`, { enabled: false }, alice);
+
+  const reply = await socket.emitWithAck('chat:send', { nickname: 'zoé', text: 'Allô' });
+  assert.ok(reply.error);
+
+  socket.disconnect();
+});

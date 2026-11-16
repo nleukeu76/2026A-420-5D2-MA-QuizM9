@@ -32,7 +32,8 @@
  *   GET  /api/games/:code              200 état public
  *   POST /api/games/:code/next        200 état public     (animateur)
  *   POST /api/games/:code/answers     201 {}              corps : { nickname, choiceId }
- *
+ * 
+ *   POST /api/games/:code/chat        200 { enabled }     corps : { enabled }  (animateur)
  * Toute erreur a la forme { error: "un message" } : 404 si la ressource
  * n'existe pas, 400 pour une demande invalide, 401 s'il faut être connecté,
  * 403 si le compte connecté n'a pas le droit.
@@ -56,7 +57,7 @@ import {
   currentQuestion,
   publicState,
 } from './game.js';
-import { broadcastState, closeAtDeadline } from './realtime.js';
+import { broadcastState, closeAtDeadline, setChatEnabled } from './realtime.js';
 
 await repository.initializeDatabase();
 
@@ -257,6 +258,16 @@ app.post('/api/games/:code/next', requireAccount, requireGameHost, async (req, r
   }
   await broadcastState(game.code);
   res.status(200).json(state);
+});
+
+// L'animateur désactive ou réactive le chat de sa partie.
+app.post('/api/games/:code/chat', requireAccount, requireGameHost, (req, res) => {
+  const enabled = req.body?.enabled;
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ error: 'enabled doit être un booléen.' });
+  }
+  setChatEnabled(req.game.code, enabled);
+  res.status(200).json({ enabled });
 });
 
 // Un joueur répond à la question en cours.

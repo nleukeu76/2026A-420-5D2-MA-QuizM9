@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { nextQuestion } from '../api.js';
 import { useGame } from '../useGame.js';
+import Chat from '../components/Chat.jsx';
 import { getSession } from '../session.js';
 import Leaderboard from '../components/Leaderboard.jsx';
 
@@ -12,7 +13,7 @@ import Leaderboard from '../components/Leaderboard.jsx';
 export default function Lobby() {
   const { code } = useParams();
   const navigate = useNavigate();
-  const game = useGame(code);
+  const { game, chat, sendMessage } = useGame(code);
   const [session, setSession] = useState(null);
   const [error, setError] = useState(null);
 
@@ -57,6 +58,14 @@ export default function Lobby() {
         <p>En attente de l'animateur…</p>
       )}
       {error && <p className="error">{error}</p>}
+
+      <Chat
+        code={code}
+        chat={chat}
+        sendMessage={sendMessage}
+        nickname={session?.role === 'player' ? session.nickname : null}
+        isHost={session?.role === 'host'}
+      />
     </main>
   );
 }

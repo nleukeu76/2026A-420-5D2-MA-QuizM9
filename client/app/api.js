@@ -44,3 +44,8 @@ export function nextQuestion(code) {
 export function sendAnswer(code, nickname, choiceId) {
   return request('POST', `/api/games/${code}/answers`, { nickname, choiceId });
 }
+
+/** L'animateur désactive (false) ou réactive (true) le chat de sa partie. */
+export function setChatEnabled(code, enabled) {
+  return request('POST', `/api/games/${code}/chat`, { enabled });
+}
